@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin:0;
+    background:black;
+    font-family:'Montserrat', sans-serif;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+
+.container {
+    text-align:center;
+}
+
+.number {
+    font-size:160px;
+    font-weight:900;
+    letter-spacing:3px;
+    text-shadow:
+        0 0 10px rgba(255,255,255,0.6),
+        0 0 25px rgba(255,255,255,0.3);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.middle {
+    font-size:55px;
+    font-weight:900;
+    letter-spacing:6px;
+    margin:15px 0 10px 0;
+    opacity:0.9;
+}
+
+.line {
+    width:240px;
+    height:4px;
+    background:white;
+    margin:10px auto 20px auto;
+    opacity:0.7;
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+.animate {
+    transform: scale(1.25);
+    opacity:0.6;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+```
+<div id="wins" class="number">0</div>
+
+<div class="middle">WIN</div>
+<div class="line"></div>
+
+<div id="target" class="number">0</div>
+```
+
+</div>
+
+<script>
+
+function getParam(name, def) {
+    let url = new URL(window.location.href);
+    return parseInt(url.searchParams.get(name)) || def;
+}
+
+let winsEl = document.getElementById("wins");
+let targetEl = document.getElementById("target");
+
+let wins = getParam("wins", 0);
+let target = getParam("target", 10);
+
+winsEl.innerText = wins;
+targetEl.innerText = target;
+
+let lastWins = wins;
+
+function animateChange(el) {
+    el.classList.add("animate");
+    setTimeout(()=> el.classList.remove("animate"), 300);
+}
+
+async function updateFromServer() {
+    try {
+        let r = await fetch("http://localhost:8085/");
+        let j = await r.json();
+
+        if (j.wins !== undefined && j.wins != lastWins) {
+            winsEl.innerText = j.wins;
+            animateChange(winsEl);
+            lastWins = j.wins;
+        }
+
+        if (j.target !== undefined)
+            targetEl.innerText = j.target;
+
+    } catch {}
+}
+
+setInterval(updateFromServer, 500);
+
+</script>
+
+</body>
+</html>
