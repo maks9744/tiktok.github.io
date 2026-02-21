@@ -62,44 +62,42 @@ body {
 
 <div class="container">
 
-```
+
 <div id="wins" class="number">0</div>
 
 <div class="middle">WIN</div>
 <div class="line"></div>
 
 <div id="target" class="number">0</div>
-```
+
 
 </div>
 
 <script>
 
-function getParam(name, def) {
-    let url = new URL(window.location.href);
-    return parseInt(url.searchParams.get(name)) || def;
-}
-
 let winsEl = document.getElementById("wins");
 let targetEl = document.getElementById("target");
 
-let wins = getParam("wins", 0);
-let target = getParam("target", 10);
-
-winsEl.innerText = wins;
-targetEl.innerText = target;
-
-let lastWins = wins;
+let lastWins = -1;
+let ws = null;
 
 function animateChange(el) {
     el.classList.add("animate");
-    setTimeout(()=> el.classList.remove("animate"), 300);
+    setTimeout(() => el.classList.remove("animate"), 300);
 }
 
-async function updateFromServer() {
-    try {
-        let r = await fetch("http://localhost:8085/");
-        let j = await r.json();
+function connectWS() {
+
+    console.log("Connecting WS...");
+
+    ws = new WebSocket("ws://127.0.0.1:8086/");
+
+    ws.onopen = () => {
+        console.log("WS Connected");
+    };
+
+    ws.onmessage = (event) => {
+        let j = JSON.parse(event.data);
 
         if (j.wins !== undefined && j.wins != lastWins) {
             winsEl.innerText = j.wins;
@@ -109,13 +107,26 @@ async function updateFromServer() {
 
         if (j.target !== undefined)
             targetEl.innerText = j.target;
+    };
 
-    } catch {}
+    ws.onerror = (e) => {
+        console.log("WS Error", e);
+    };
+
+    ws.onclose = () => {
+        console.log("WS Disconnected. Reconnecting in 2s...");
+        setTimeout(connectWS, 2000); // попытка переподключения
+    };
 }
 
-setInterval(updateFromServer, 500);
+// первый запуск
+connectWS();
 
 </script>
+
+
+
+
 
 </body>
 </html>
