@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 <head>
 <meta charset="UTF-8">
@@ -30,7 +29,7 @@ body {
     text-shadow:
         0 0 10px rgba(255,255,255,0.6),
         0 0 25px rgba(255,255,255,0.3);
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease, color 0.3s ease;
 }
 
 .middle {
@@ -54,14 +53,20 @@ body {
     transform: scale(1.25);
     opacity:0.6;
 }
-</style>
 
+/* Красный при уменьшении */
+.decrease {
+    color: #ff2b2b;
+    text-shadow:
+        0 0 10px rgba(255,0,0,0.9),
+        0 0 25px rgba(255,0,0,0.6);
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
-
 
 <div id="wins" class="number">0</div>
 
@@ -70,13 +75,19 @@ body {
 
 <div id="target" class="number">0</div>
 
-
 </div>
+
+<!-- Звуки -->
+<audio id="soundUp" src="up.mp3" preload="auto"></audio>
+<audio id="soundDown" src="down.mp3" preload="auto"></audio>
 
 <script>
 
 let winsEl = document.getElementById("wins");
 let targetEl = document.getElementById("target");
+
+let soundUp = document.getElementById("soundUp");
+let soundDown = document.getElementById("soundDown");
 
 let lastWins = -1;
 let ws = null;
@@ -97,16 +108,46 @@ function connectWS() {
     };
 
     ws.onmessage = (event) => {
+
         let j = JSON.parse(event.data);
 
-        if (j.wins !== undefined && j.wins != lastWins) {
-            winsEl.innerText = j.wins;
-            animateChange(winsEl);
-            lastWins = j.wins;
+        if (j.wins !== undefined) {
+
+            let newWins = parseInt(j.wins);
+
+            if (newWins != lastWins) {
+
+                if (lastWins !== -1) {
+
+                    // УВЕЛИЧЕНИЕ
+                    if (newWins > lastWins) {
+                        soundUp.currentTime = 0;
+                        soundUp.play().catch(()=>{});
+                    }
+
+                    // УМЕНЬШЕНИЕ
+                    if (newWins < lastWins) {
+
+                        winsEl.classList.add("decrease");
+
+                        soundDown.currentTime = 0;
+                        soundDown.play().catch(()=>{});
+
+                        setTimeout(() => {
+                            winsEl.classList.remove("decrease");
+                        }, 1000);
+                    }
+                }
+
+                winsEl.innerText = newWins;
+                animateChange(winsEl);
+                lastWins = newWins;
+            }
         }
 
-        if (j.target !== undefined)
+        if (j.target !== undefined) {
             targetEl.innerText = j.target;
+        }
     };
 
     ws.onerror = (e) => {
@@ -115,7 +156,7 @@ function connectWS() {
 
     ws.onclose = () => {
         console.log("WS Disconnected. Reconnecting in 2s...");
-        setTimeout(connectWS, 2000); // попытка переподключения
+        setTimeout(connectWS, 2000);
     };
 }
 
@@ -123,10 +164,6 @@ function connectWS() {
 connectWS();
 
 </script>
-
-
-
-
 
 </body>
 </html>
